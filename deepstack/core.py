@@ -6,7 +6,7 @@ import requests
 from PIL import Image
 
 ## Const
-CLASSIFIER = 'deepstack'
+CLASSIFIER = "deepstack"
 HTTP_OK = 200
 HTTP_BAD_REQUEST = 400
 HTTP_UNAUTHORIZED = 401
@@ -18,8 +18,11 @@ def get_matched_faces(predictions: dict):
     Get the predicted faces and their confidence.
     """
     try:
-        matched_faces = {face['userid']: round(face['confidence']*100, 1)
-                         for face in predictions if not face['userid'] == 'unknown'}
+        matched_faces = {
+            face["userid"]: round(face["confidence"] * 100, 1)
+            for face in predictions
+            if not face["userid"] == "unknown"
+        }
         return matched_faces
     except:
         return {}
@@ -34,7 +37,7 @@ def is_valid_image(file_path: str):
             pass
 
         image_extension = imghdr.what(file_path)
-        if image_extension in ['jpeg', '.jpg', '.png']:
+        if image_extension in ["jpeg", ".jpg", ".png"]:
             return True
         return False
     except Exception as exc:
@@ -45,11 +48,7 @@ def is_valid_image(file_path: str):
 def post_image(url: str, image: bytes):
     """Post an image to the classifier."""
     try:
-        response = requests.post(
-            url,
-            files={"image": image},
-            timeout=TIMEOUT
-        )
+        response = requests.post(url, files={"image": image}, timeout=TIMEOUT)
         return response
     except requests.exceptions.ConnectionError:
         print("ConnectionError: Is %s running?", CLASSIFIER)
@@ -59,13 +58,14 @@ def post_image(url: str, image: bytes):
         return None
 
 
-class DeepstackFace():
+class DeepstackFace:
     """Work with faces."""
 
     def __init__(self, ip_address: str, port: str):
 
         self._url_check = "http://{}:{}/v1/vision/face/recognize".format(
-            ip_address, port)
+            ip_address, port
+        )
 
         self._faces = None
         self._matched = {}
@@ -78,8 +78,7 @@ class DeepstackFace():
 
     def process_image_bytes(self, image_bytes: bytes):
         """Process an image."""
-        response = post_image(
-            self._url_check, image_bytes)
+        response = post_image(self._url_check, image_bytes)
         if response:
             if response.status_code == HTTP_OK:
                 predictions_json = response.json()["predictions"]
@@ -94,7 +93,7 @@ class DeepstackFace():
     def attributes(self):
         """Return the classifier attributes."""
         return {
-            'faces': self._faces,
-            'matched_faces': self._matched,
-            'total_matched_faces': len(self._matched),
+            "faces": self._faces,
+            "matched_faces": self._matched,
+            "total_matched_faces": len(self._matched),
         }
