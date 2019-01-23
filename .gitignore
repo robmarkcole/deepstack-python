@@ -1,25 +1,3 @@
-# Build and Release Folders
-bin-debug/
-bin-release/
-[Oo]bj/
-[Bb]in/
-dist/
-
-# Other files and folders
-deepstack_python.egg-info*
-.settings/
-.ipynb_checkpoints
-
-# Executables
-*.swf
-*.air
-*.ipa
-*.apk
-
-# Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
-# should NOT be excluded as they contain compiler settings and other important
-# information for Eclipse / Flash Builder.
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -39,6 +17,7 @@ eggs/
 lib/
 lib64/
 parts/
+__pycache__/
 sdist/
 var/
 wheels/

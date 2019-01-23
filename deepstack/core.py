@@ -1,5 +1,5 @@
 """
-Deepstack cpre.
+Deepstack core.
 """
 import imghdr
 import requests
