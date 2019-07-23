@@ -14,7 +14,7 @@ setup(
     install_requires=REQUIRES,
     packages=find_packages(),
     license="Apache License, Version 2.0",
-    python_requires=">=3.5",
+    python_requires=">=3.7",
     classifiers=[
         "Intended Audience :: Developers",
         "Natural Language :: English",
