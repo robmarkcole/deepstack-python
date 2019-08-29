@@ -11,13 +11,20 @@ HTTP_UNAUTHORIZED = 401
 TIMEOUT = 30  # seconds
 
 
+def format_confidence(confidence):
+    """Takes a confidence from the API like 
+       0.55623 and returne 55.6 (%).
+    """
+    return round(float(confidence)*100, 1)
+
+
 def get_matched_faces(predictions: dict):
     """
     Get the predicted faces and their confidence.
     """
     matched_faces = {}
     matched_faces = {
-        face["userid"]: round(face["confidence"] * 100, 1)
+        face["userid"]: format_confidence(face["confidence"])
         for face in predictions
         if not face["userid"] == "unknown"
     }
@@ -41,6 +48,9 @@ class DeepstackFace:
 
         self._faces = None
         self._matched = {}
+
+    def register_face(self, file_path: str, userid: str):
+        """Register a face with Deepstack."""
 
     def process_file(self, file_path: str):
         """Process an image file."""
