@@ -9,7 +9,7 @@ from typing import Union, List, Set, Dict
 HTTP_OK = 200
 HTTP_BAD_REQUEST = 400
 HTTP_UNAUTHORIZED = 401
-TIMEOUT = 20  # seconds
+DEFAULT_TIMEOUT = 10  # seconds
 
 
 def format_confidence(confidence: Union[str, float]) -> float:
@@ -55,21 +55,40 @@ def get_objects_summary(predictions: List[Dict]):
     }
 
 
-def post_image(url: str, image: bytes):
+def post_image(url: str, image: bytes, api_key: str, timeout: int):
     """Post an image to Deepstack."""
-    response = requests.post(url, files={"image": image}, timeout=TIMEOUT)
-    return response
+    try:
+        response = requests.post(
+            url, files={"image": image}, data={"api_key": api_key}, timeout=timeout
+        )
+        return response
+    except requests.exceptions.Timeout:
+        raise DeepstackException(
+            f"Timeout connecting to Deepstack, current timeout is {timeout} seconds"
+        )
+
+
+class DeepstackException(Exception):
+    pass
 
 
 class DeepstackObject:
     """The object detection API locates and classifies 80 
     different kinds of objects in a single image.."""
 
-    def __init__(self, ip_address: str, port: str):
+    def __init__(
+        self,
+        ip_address: str,
+        port: str,
+        api_key: str = "",
+        timeout: int = DEFAULT_TIMEOUT,
+    ):
 
         self._url_object_detection = "http://{}:{}/v1/vision/detection".format(
             ip_address, port
         )
+        self._api_key = api_key
+        self._timeout = timeout
         self._predictions = []
 
     def process_file(self, file_path: str):
@@ -81,10 +100,16 @@ class DeepstackObject:
         """Process an image."""
         self._predictions = []
 
-        response = post_image(self._url_object_detection, image_bytes)
-        if response:
-            if response.status_code == HTTP_OK:
+        response = post_image(
+            self._url_object_detection, image_bytes, self._api_key, self._timeout
+        )
+
+        if response.status_code == HTTP_OK:
+            if response.json()["success"]:
                 self._predictions = response.json()["predictions"]
+            else:
+                error = response.json()["error"]
+                raise DeepstackException(f"Error from Deepstack: {error}")
 
     @property
     def predictions(self):
