@@ -1,0 +1,3 @@
+pytest
+black
+requests_mock

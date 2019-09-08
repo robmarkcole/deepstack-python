@@ -7,8 +7,6 @@ from typing import Union, List, Set, Dict
 
 ## Const
 HTTP_OK = 200
-HTTP_BAD_REQUEST = 400
-HTTP_UNAUTHORIZED = 401
 DEFAULT_TIMEOUT = 10  # seconds
 
 
@@ -26,12 +24,12 @@ def get_confidences_above_threshold(
     return [val for val in confidences if val >= confidence_threshold]
 
 
-def get_object_labels(predictions: List[Dict]) -> Set[str]:
+def get_object_labels(predictions: List[Dict]) -> List[str]:
     """
     Get a list of the unique object labels predicted.
     """
     labels = [pred["label"] for pred in predictions]
-    return set(labels)
+    return list(set(labels))
 
 
 def get_label_confidences(predictions: List[Dict], target_label: str):
