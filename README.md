@@ -3,3 +3,8 @@
 
 # deepstack-python
 Unofficial python API for DeepStack. Provides class for making requests to the object detection endpoint, and functions for processing the result. See the `usage.ipynb` notebook for usage.
+
+## Development
+* Use `venv`
+* `pip install -r requirements-dev.txt`
+* Run tests with `venv/bin/pytest tests/*`
