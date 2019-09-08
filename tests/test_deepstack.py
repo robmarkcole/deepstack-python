@@ -1,6 +1,15 @@
 # Placeholder
 
 import deepstack.core as ds
+import requests_mock
+
+MOCK_IP_ADDRESS = "localhost"
+MOCK_PORT = 5000
+MOCK_URL = "http://{}:{}/v1/vision/detection".format(MOCK_IP_ADDRESS, MOCK_PORT)
+
+MOCK_BYTES = b"Test"
+MOCK_API_KEY = "mock_api_key"
+MOCK_TIMEOUT = 8
 
 MOCK_RESPONSE = {
     "success": True,
@@ -37,6 +46,15 @@ MOCK_CONFIDENCES = [0.6998661, 0.7996547]
 CONFIDENCE_THRESHOLD = 0.7
 
 
+def test_DeepstackObject():
+    with requests_mock.Mocker() as mock_req:
+        mock_req.post(MOCK_URL, status_code=ds.HTTP_OK, json=MOCK_RESPONSE)
+
+        dsobject = ds.DeepstackObject(MOCK_IP_ADDRESS, MOCK_PORT)
+        dsobject.process_image_bytes(MOCK_BYTES)
+        assert dsobject.predictions == MOCK_PREDICTIONS
+
+
 def test_get_object_labels():
     """Cant always be sure order of returned list items."""
     object_labels = ds.get_object_labels(MOCK_PREDICTIONS)
@@ -45,14 +63,19 @@ def test_get_object_labels():
     assert "person" in object_labels
     assert len(object_labels) == 2
 
+
 def test_get_objects_summary():
     objects_summary = ds.get_objects_summary(MOCK_PREDICTIONS)
-    assert objects_summary == {'dog': 1, 'person': 2}
+    assert objects_summary == {"dog": 1, "person": 2}
+
 
 def test_get_label_confidences():
-    label_confidences = ds.get_label_confidences(MOCK_PREDICTIONS, 'person')
+    label_confidences = ds.get_label_confidences(MOCK_PREDICTIONS, "person")
     assert label_confidences == MOCK_CONFIDENCES
 
 
 def test_get_confidences_above_threshold():
-    assert len(ds.get_confidences_above_threshold(MOCK_CONFIDENCES, CONFIDENCE_THRESHOLD)) == 1
+    assert (
+        len(ds.get_confidences_above_threshold(MOCK_CONFIDENCES, CONFIDENCE_THRESHOLD))
+        == 1
+    )
