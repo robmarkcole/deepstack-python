@@ -161,7 +161,7 @@ class DeepstackFace(Deepstack):
         )
 
         if response.status_code == 200 and response.json()["success"] == True:
-            print("Taught face {} using file {}".format(name, file_path))
+            return
         elif response.status_code == 200 and response.json()["success"] == False:
             error = response.json()["error"]
-            print("Error: {}".format(error))
+            raise DeepstackException(f"Error from Deepstack: {error}")
