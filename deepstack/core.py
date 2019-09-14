@@ -9,6 +9,10 @@ from typing import Union, List, Set, Dict
 HTTP_OK = 200
 DEFAULT_TIMEOUT = 10  # seconds
 
+## API urls
+URL_OBJECT_DETECTION = "http://{}:{}/v1/vision/detection"
+URL_FACE_DETECTION = "http://{}:{}/v1/vision/face"
+
 
 def format_confidence(confidence: Union[str, float]) -> float:
     """Takes a confidence from the API like 
@@ -70,9 +74,8 @@ class DeepstackException(Exception):
     pass
 
 
-class DeepstackObject:
-    """The object detection API locates and classifies 80 
-    different kinds of objects in a single image.."""
+class Deepstack(object):
+    """Base class for deepstack."""
 
     def __init__(
         self,
@@ -80,11 +83,12 @@ class DeepstackObject:
         port: str,
         api_key: str = "",
         timeout: int = DEFAULT_TIMEOUT,
+        url_detection: str = "",
     ):
 
-        self._url_object_detection = "http://{}:{}/v1/vision/detection".format(
-            ip_address, port
-        )
+        self._ip_address = ip_address
+        self._port = port
+        self._url_detection = url_detection
         self._api_key = api_key
         self._timeout = timeout
         self._predictions = []
@@ -97,10 +101,9 @@ class DeepstackObject:
     def process_image_bytes(self, image_bytes: bytes):
         """Process an image."""
         self._predictions = []
+        url = self._url_detection.format(self._ip_address, self._port)
 
-        response = post_image(
-            self._url_object_detection, image_bytes, self._api_key, self._timeout
-        )
+        response = post_image(url, image_bytes, self._api_key, self._timeout)
 
         if response.status_code == HTTP_OK:
             if response.json()["success"]:
@@ -113,3 +116,18 @@ class DeepstackObject:
     def predictions(self):
         """Return the classifier attributes."""
         return self._predictions
+
+
+class DeepstackObject(Deepstack):
+    """Work with objects"""
+
+    def __init__(
+        self,
+        ip_address: str,
+        port: str,
+        api_key: str = "",
+        timeout: int = DEFAULT_TIMEOUT,
+    ):
+        super().__init__(
+            ip_address, port, api_key, timeout, url_detection=URL_OBJECT_DETECTION
+        )

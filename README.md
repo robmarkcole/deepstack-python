@@ -3,9 +3,15 @@
 [![build status](http://img.shields.io/travis/robmarkcole/deepstack-python/master.svg?style=flat)](https://travis-ci.org/robmarkcole/deepstack-python)
 
 # deepstack-python
-Unofficial python API for DeepStack. Provides class for making requests to the object detection endpoint, and functions for processing the result. See the `usage.ipynb` notebook for usage.
+Unofficial python API for [DeepStack](https://python.deepstack.cc/). Provides class for making requests to the object detection endpoint, and functions for processing the result. See the `usage.ipynb` notebook for usage.
+
+## Services
+Face and object detection endpoints return bounding boxes of faces and objects respectively. 
+
+TODO: add face registration and recognition.
 
 ## Development
-* Use `venv`
+* Use `venv` -> `source venv/bin/activate`
 * `pip install -r requirements-dev.txt`
 * Run tests with `venv/bin/pytest tests/*`
+* Black format with `venv/bin/black deepstack/core.py`
