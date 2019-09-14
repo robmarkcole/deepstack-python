@@ -48,23 +48,25 @@ MOCK_OBJECT_CONFIDENCES = [0.6998661, 0.7996547]
 CONFIDENCE_THRESHOLD = 0.7
 
 
-def test_DeepstackObject_process_image_bytes():
+def test_DeepstackObject_detect():
     """Test a good response from server."""
     with requests_mock.Mocker() as mock_req:
-        mock_req.post(MOCK_URL, status_code=ds.HTTP_OK, json=MOCK_OBJECT_DETECTION_RESPONSE)
+        mock_req.post(
+            MOCK_URL, status_code=ds.HTTP_OK, json=MOCK_OBJECT_DETECTION_RESPONSE
+        )
 
         dsobject = ds.DeepstackObject(MOCK_IP_ADDRESS, MOCK_PORT)
-        dsobject.process_image_bytes(MOCK_BYTES)
+        dsobject.detect(MOCK_BYTES)
         assert dsobject.predictions == MOCK_OBJECT_PREDICTIONS
 
 
-def test_DeepstackObject_process_image_bytes_timeout():
+def test_DeepstackObject_detect_timeout():
     """Test a timeout. THIS SHOULD FAIL"""
     with pytest.raises(ds.DeepstackException) as excinfo:
         with requests_mock.Mocker() as mock_req:
             mock_req.post(MOCK_URL, exc=requests.exceptions.ConnectTimeout)
             dsobject = ds.DeepstackObject(MOCK_IP_ADDRESS, MOCK_PORT)
-            dsobject.process_image_bytes(MOCK_BYTES)
+            dsobject.detect(MOCK_BYTES)
             assert False
             assert "SHOULD FAIL" in str(excinfo.value)
 
@@ -90,6 +92,10 @@ def test_get_object_confidences():
 
 def test_get_confidences_above_threshold():
     assert (
-        len(ds.get_confidences_above_threshold(MOCK_OBJECT_CONFIDENCES, CONFIDENCE_THRESHOLD))
+        len(
+            ds.get_confidences_above_threshold(
+                MOCK_OBJECT_CONFIDENCES, CONFIDENCE_THRESHOLD
+            )
+        )
         == 1
     )

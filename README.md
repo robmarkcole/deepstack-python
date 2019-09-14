@@ -14,4 +14,4 @@ TODO: add face registration and recognition.
 * Use `venv` -> `source venv/bin/activate`
 * `pip install -r requirements-dev.txt`
 * Run tests with `venv/bin/pytest tests/*`
-* Black format with `venv/bin/black deepstack/core.py`
+* Black format with `venv/bin/black deepstack/core.py` and `venv/bin/black tests/test_deepstack.py`

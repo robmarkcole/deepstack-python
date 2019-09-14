@@ -59,12 +59,14 @@ def get_objects_summary(predictions: List[Dict]):
     }
 
 
-def post_image(url: str, image: bytes, api_key: str, timeout: int, data: dict = {}):
+def post_image(
+    url: str, image_bytes: bytes, api_key: str, timeout: int, data: dict = {}
+):
     """Post an image to Deepstack."""
     try:
         data["api_key"] = api_key
         response = requests.post(
-            url, files={"image": image}, data=data, timeout=timeout
+            url, files={"image": image_bytes}, data=data, timeout=timeout
         )
         return response
     except requests.exceptions.Timeout:
@@ -96,13 +98,8 @@ class Deepstack(object):
         self._timeout = timeout
         self._predictions = []
 
-    def process_file(self, file_path: str):
-        """Process an image file."""
-        with open(file_path, "rb") as image_bytes:
-            self.process_image_bytes(image_bytes)
-
-    def process_image_bytes(self, image_bytes: bytes):
-        """Process an image, performing detection."""
+    def detect(self, image_bytes: bytes):
+        """Process image_bytes, performing detection."""
         self._predictions = []
         url = self._url_detection.format(self._ip_address, self._port)
 
@@ -150,19 +147,18 @@ class DeepstackFace(Deepstack):
             ip_address, port, api_key, timeout, url_detection=URL_FACE_DETECTION
         )
 
-    def register_face(self, name: str, file_path: str):
+    def register_face(self, name: str, image_bytes: bytes):
         """
         Register a face name to a file.
         """
 
-        with open(file_path, "rb") as image:
-            response = post_image(
-                url=URL_FACE_REGISTRATION.format(self._ip_address, self._port),
-                image=image,
-                api_key=self._api_key,
-                timeout=self._timeout,
-                data={"userid": name},
-            )
+        response = post_image(
+            url=URL_FACE_REGISTRATION.format(self._ip_address, self._port),
+            image_bytes=image_bytes,
+            api_key=self._api_key,
+            timeout=self._timeout,
+            data={"userid": name},
+        )
 
         if response.status_code == 200 and response.json()["success"] == True:
             print("Taught face {} using file {}".format(name, file_path))
