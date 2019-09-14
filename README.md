@@ -3,7 +3,7 @@
 [![build status](http://img.shields.io/travis/robmarkcole/deepstack-python/master.svg?style=flat)](https://travis-ci.org/robmarkcole/deepstack-python)
 
 # deepstack-python
-Unofficial python API for [DeepStack](https://python.deepstack.cc/). Provides class for making requests to the object detection endpoint, and functions for processing the result. See the `usage.ipynb` notebook for usage.
+Unofficial python API for [DeepStack](https://python.deepstack.cc/). Provides class for making requests to the object detection endpoint, and functions for processing the result. See the Jupyter notebooks for usage.
 
 ## Services
 Face and object detection endpoints return bounding boxes of faces and objects respectively. 

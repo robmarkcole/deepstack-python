@@ -131,3 +131,17 @@ class DeepstackObject(Deepstack):
         super().__init__(
             ip_address, port, api_key, timeout, url_detection=URL_OBJECT_DETECTION
         )
+
+class DeepstackFace(Deepstack):
+    """Work with objects"""
+
+    def __init__(
+        self,
+        ip_address: str,
+        port: str,
+        api_key: str = "",
+        timeout: int = DEFAULT_TIMEOUT,
+    ):
+        super().__init__(
+            ip_address, port, api_key, timeout, url_detection=URL_FACE_DETECTION
+        )
