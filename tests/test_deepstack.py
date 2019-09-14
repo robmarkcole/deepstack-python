@@ -1,5 +1,3 @@
-# Placeholder
-
 import deepstack.core as ds
 import requests
 import requests_mock
@@ -43,9 +41,32 @@ MOCK_OBJECT_DETECTION_RESPONSE = {
     ],
 }
 
+MOCK_FACE_RECOGNITION_RESPONSE = {
+    "success": True,
+    "predictions": [
+        {
+            "confidence": 0.74999994,
+            "userid": "Idris Elba",
+            "y_min": 176,
+            "x_min": 209,
+            "y_max": 825,
+            "x_max": 677,
+        },
+        {
+            "confidence": 0,
+            "userid": "unknown",
+            "y_min": 230,
+            "x_min": 867,
+            "y_max": 729,
+            "x_max": 1199,
+        },
+    ],
+}
+
 MOCK_OBJECT_PREDICTIONS = MOCK_OBJECT_DETECTION_RESPONSE["predictions"]
 MOCK_OBJECT_CONFIDENCES = [0.6998661, 0.7996547]
 CONFIDENCE_THRESHOLD = 0.7
+MOCK_RECOGNISED_FACES = {"Idris Elba": 75.0}
 
 
 def test_DeepstackObject_detect():
@@ -99,3 +120,8 @@ def test_get_confidences_above_threshold():
         )
         == 1
     )
+
+
+def test_get_recognised_faces():
+    predictions = MOCK_FACE_RECOGNITION_RESPONSE["predictions"]
+    assert ds.get_recognised_faces(predictions) == MOCK_RECOGNISED_FACES

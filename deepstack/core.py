@@ -30,6 +30,21 @@ def get_confidences_above_threshold(
     return [val for val in confidences if val >= confidence_threshold]
 
 
+def get_recognised_faces(predictions: List[Dict]) -> List[Dict]:
+    """
+    Get the recognised faces.
+    """
+    try:
+        matched_faces = {
+            face["userid"]: round(face["confidence"] * 100, 1)
+            for face in predictions
+            if not face["userid"] == "unknown"
+        }
+        return matched_faces
+    except:
+        return {}
+
+
 def get_objects(predictions: List[Dict]) -> List[str]:
     """
     Get a list of the unique objects predicted.
@@ -73,6 +88,8 @@ def post_image(
         raise DeepstackException(
             f"Timeout connecting to Deepstack, current timeout is {timeout} seconds"
         )
+    except requests.exceptions.ConnectionError as exc:
+        raise DeepstackException(f"Connection error: {exc}")
 
 
 class DeepstackException(Exception):
@@ -165,3 +182,17 @@ class DeepstackFace(Deepstack):
         elif response.status_code == 200 and response.json()["success"] == False:
             error = response.json()["error"]
             raise DeepstackException(f"Error from Deepstack: {error}")
+
+    def recognise(self, image_bytes: bytes):
+        """Process image_bytes, performing recognition."""
+        self._predictions = []
+        url = URL_FACE_RECOGNITION.format(self._ip_address, self._port)
+
+        response = post_image(url, image_bytes, self._api_key, self._timeout)
+
+        if response.status_code == HTTP_OK:
+            if response.json()["success"]:
+                self._predictions = response.json()["predictions"]
+            else:
+                error = response.json()["error"]
+                raise DeepstackException(f"Error from Deepstack: {error}")
