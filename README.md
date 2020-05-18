@@ -3,17 +3,41 @@
 [![build status](http://img.shields.io/travis/robmarkcole/deepstack-python/master.svg?style=flat)](https://travis-ci.org/robmarkcole/deepstack-python)
 
 # deepstack-python
-Unofficial python API for [DeepStack](https://python.deepstack.cc/). Provides class for making requests to the object detection endpoint, and functions for processing the result. See the Jupyter notebooks for usage.
-Run deepstack (CPU, noAVX mode):
+Unofficial python API for [DeepStack](https://python.deepstack.cc/). Provides classes for making requests to the object detection & face detection/recognition endpoints. Also includes some helper functions for processing the results. See the Jupyter notebooks for usage.
+
+Run deepstack with all three endpoints active (CPU, noAVX mode):
 ```
-docker run -e VISION-DETECTION=True -e VISION-FACE=True -e MODE=High -d \
-      -v localstorage:/datastore -p 5000:5000 \
-      -e API-KEY="Mysecretkey" \
-       --name deepstack deepquestai/deepstack:noavx
+docker run \
+      -e VISION-SCENE=True \
+      -e VISION-DETECTION=True \
+      -e VISION-FACE=True \
+      -v localstorage:/datastore \
+      -p 5000:5000 \
+      -e API-KEY="" \
+      --name deepstack deepquestai/deepstack:noavx
+```
+Check deepstack is running using curl (from root of this repo):
+```
+curl -X POST -F image=@tests/images/test-image3.jpg 'http://localhost:5000/v1/vision/detection'
+```
+If all goes well you should see the following returned:
+```
+{"success":true,"predictions":[{"confidence":0.9998661,"label":"person","y_min":0,"x_min":258,"y_max":676,"x_max":485},{"confidence":0.9996547,"label":"person","y_min":0,"x_min":405,"y_max":652,"x_max":639},{"confidence":0.99745613,"label":"dog","y_min":311,"x_min":624,"y_max":591,"x_max":825}]}
 ```
 
 ## Development
-* Use `venv` -> `source venv/bin/activate`
-* `pip install -r requirements-dev.txt`
+* Create venv -> `python3.7 -m venv venv`
+* Use venv -> `source venv/bin/activate`
+* `pip3 install -r requirements.txt` and `pip3 install -r requirements-dev.txt`
 * Run tests with `venv/bin/pytest tests/*`
 * Black format with `venv/bin/black deepstack/core.py` and `venv/bin/black tests/test_deepstack.py`
+
+## Jupyter
+* Docs are created using Jupyter notebooks
+* Install in venv with -> `pip3 install jupyterlab`
+* Run -> `venv/bin/jupyter lab`
+
+## Deployment to pypi
+* Generate requirements with -> `pip3 freeze > requirements.txt`
+* Create a distribution with -> `python3 setup.py sdist` (creates dist)
+* Upload packages with twine with -> `twine upload dist/*`
