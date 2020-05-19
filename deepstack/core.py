@@ -14,6 +14,7 @@ URL_OBJECT_DETECTION = "http://{}:{}/v1/vision/detection"
 URL_FACE_DETECTION = "http://{}:{}/v1/vision/face"
 URL_FACE_REGISTRATION = "http://{}:{}/v1/vision/face/register"
 URL_FACE_RECOGNITION = "http://{}:{}/v1/vision/face/recognize"
+URL_SCENE_DETECTION = "http://{}:{}/v1/vision/scene"
 
 
 def format_confidence(confidence: Union[str, float]) -> float:
@@ -113,26 +114,27 @@ class Deepstack(object):
         self._url_detection = url_detection
         self._api_key = api_key
         self._timeout = timeout
-        self._predictions = []
+        self._response = None
 
     def detect(self, image_bytes: bytes):
         """Process image_bytes, performing detection."""
-        self._predictions = []
+        self._response = None
         url = self._url_detection.format(self._ip_address, self._port)
 
         response = post_image(url, image_bytes, self._api_key, self._timeout)
 
-        if response.status_code == HTTP_OK:
-            if response.json()["success"]:
-                self._predictions = response.json()["predictions"]
-            else:
-                error = response.json()["error"]
-                raise DeepstackException(f"Error from Deepstack: {error}")
+        if not response.status_code == HTTP_OK:
+            raise DeepstackException(f"Error from request: {response.status_code}")
+            return
+
+        self._response = response.json()
+        if not self._response["success"]:
+            raise DeepstackException(f"Error from Deepstack: {error}")
 
     @property
     def predictions(self):
-        """Return the classifier attributes."""
-        return self._predictions
+        """Return the predictions."""
+        raise NotImplementedError
 
 
 class DeepstackObject(Deepstack):
@@ -149,6 +151,31 @@ class DeepstackObject(Deepstack):
             ip_address, port, api_key, timeout, url_detection=URL_OBJECT_DETECTION
         )
 
+    @property
+    def predictions(self):
+        """Return the predictions."""
+        return self._response["predictions"]
+
+
+class DeepstackScene(Deepstack):
+    """Work with scenes"""
+
+    def __init__(
+        self,
+        ip_address: str,
+        port: str,
+        api_key: str = "",
+        timeout: int = DEFAULT_TIMEOUT,
+    ):
+        super().__init__(
+            ip_address, port, api_key, timeout, url_detection=URL_SCENE_DETECTION
+        )
+
+    @property
+    def predictions(self):
+        """Return the predictions."""
+        return self._response
+
 
 class DeepstackFace(Deepstack):
     """Work with objects"""
@@ -163,6 +190,11 @@ class DeepstackFace(Deepstack):
         super().__init__(
             ip_address, port, api_key, timeout, url_detection=URL_FACE_DETECTION
         )
+
+    @property
+    def predictions(self):
+        """Return the classifier attributes."""
+        return self._response["predictions"]
 
     def register_face(self, name: str, image_bytes: bytes):
         """
@@ -185,14 +217,14 @@ class DeepstackFace(Deepstack):
 
     def recognise(self, image_bytes: bytes):
         """Process image_bytes, performing recognition."""
-        self._predictions = []
         url = URL_FACE_RECOGNITION.format(self._ip_address, self._port)
 
         response = post_image(url, image_bytes, self._api_key, self._timeout)
 
-        if response.status_code == HTTP_OK:
-            if response.json()["success"]:
-                self._predictions = response.json()["predictions"]
-            else:
-                error = response.json()["error"]
-                raise DeepstackException(f"Error from Deepstack: {error}")
+        if not response.status_code == HTTP_OK:
+            raise DeepstackException(f"Error from request: {response.status_code}")
+            return
+
+        self._response = response.json()
+        if not self._response["success"]:
+            raise DeepstackException(f"Error from Deepstack: {error}")
