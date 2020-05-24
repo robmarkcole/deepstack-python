@@ -124,11 +124,14 @@ class Deepstack(object):
         response = post_image(url, image_bytes, self._api_key, self._timeout)
 
         if not response.status_code == HTTP_OK:
-            raise DeepstackException(f"Error from request: {response.status_code}")
+            raise DeepstackException(
+                f"Error from request, status code: {response.status_code}"
+            )
             return
 
         self._response = response.json()
         if not self._response["success"]:
+            error = response.json()["error"]
             raise DeepstackException(f"Error from Deepstack: {error}")
 
     @property
@@ -222,9 +225,12 @@ class DeepstackFace(Deepstack):
         response = post_image(url, image_bytes, self._api_key, self._timeout)
 
         if not response.status_code == HTTP_OK:
-            raise DeepstackException(f"Error from request: {response.status_code}")
+            raise DeepstackException(
+                f"Error from request, status code: {response.status_code}"
+            )
             return
 
         self._response = response.json()
         if not self._response["success"]:
+            error = response.json()["error"]
             raise DeepstackException(f"Error from Deepstack: {error}")
