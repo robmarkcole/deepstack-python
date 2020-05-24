@@ -131,7 +131,7 @@ class Deepstack(object):
 
         self._response = response.json()
         if not self._response["success"]:
-            error = response.json()["error"]
+            error = self._response["error"]
             raise DeepstackException(f"Error from Deepstack: {error}")
 
     @property
