@@ -4,6 +4,7 @@ Deepstack core.
 import requests
 from PIL import Image
 from typing import Union, List, Set, Dict
+import typefile
 
 ## Const
 HTTP_OK = 200
@@ -81,8 +82,9 @@ def post_image(
     """Post an image to Deepstack."""
     try:
         data["api_key"] = api_key
+        img_type = filetype.guess(image_bytes)
         response = requests.post(
-            url, files={"image": image_bytes}, data=data, timeout=timeout
+            url, files={"file": ('image', image_bytes, img_type.mime)}, data=data, timeout=timeout
         )
         return response
     except requests.exceptions.Timeout:
