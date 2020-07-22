@@ -4,7 +4,7 @@ Deepstack core.
 import requests
 from PIL import Image
 from typing import Union, List, Set, Dict
-import typefile
+import filetype
 
 ## Const
 HTTP_OK = 200
