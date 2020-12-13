@@ -35,8 +35,3 @@ If all goes well you should see the following returned:
 * Docs are created using Jupyter notebooks
 * Install in venv with -> `pip3 install jupyterlab`
 * Run -> `venv/bin/jupyter lab`
-
-## Deployment to pypi
-* Generate requirements with -> `pip3 freeze > requirements.txt`
-* Create a distribution with -> `python3 setup.py sdist` (creates dist)
-* Upload packages with twine with -> `twine upload dist/*`
