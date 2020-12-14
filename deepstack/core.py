@@ -10,23 +10,22 @@ HTTP_OK = 200
 DEFAULT_TIMEOUT = 10  # seconds
 
 ## API urls
-URL_OBJECT_DETECTION = "http://{}:{}/v1/vision/detection"
-URL_FACE_DETECTION = "http://{}:{}/v1/vision/face"
-URL_FACE_REGISTRATION = "http://{}:{}/v1/vision/face/register"
-URL_FACE_RECOGNITION = "http://{}:{}/v1/vision/face/recognize"
-URL_SCENE_DETECTION = "http://{}:{}/v1/vision/scene"
+URL_CUSTOM = "http://{ip}:{port}/v1/vision/custom/{custom_model}"
+URL_OBJECT_DETECTION = "http://{ip}:{port}/v1/vision/detection"
+URL_FACE_DETECTION = "http://{ip}:{port}/v1/vision/face"
+URL_FACE_REGISTRATION = "http://{ip}:{port}/v1/vision/face/register"
+URL_FACE_RECOGNITION = "http://{ip}:{port}/v1/vision/face/recognize"
+URL_SCENE_DETECTION = "http://{ip}:{port}/v1/vision/scene"
 
 
 def format_confidence(confidence: Union[str, float]) -> float:
     """Takes a confidence from the API like 
-       0.55623 and returne 55.6 (%).
+       0.55623 and returns 55.6 (%).
     """
     return round(float(confidence) * 100, 1)
 
 
-def get_confidences_above_threshold(
-    confidences: List[float], confidence_threshold: float
-) -> List[float]:
+def get_confidences_above_threshold(confidences: List[float], confidence_threshold: float) -> List[float]:
     """Takes a list of confidences and returns those above a confidence_threshold."""
     return [val for val in confidences if val >= confidence_threshold]
 
@@ -58,9 +57,7 @@ def get_object_confidences(predictions: List[Dict], target_object: str):
     """
     Return the list of confidences of instances of target label.
     """
-    confidences = [
-        pred["confidence"] for pred in predictions if pred["label"] == target_object
-    ]
+    confidences = [pred["confidence"] for pred in predictions if pred["label"] == target_object]
     return confidences
 
 
@@ -69,26 +66,17 @@ def get_objects_summary(predictions: List[Dict]):
     Get a summary of the objects detected.
     """
     objects = get_objects(predictions)
-    return {
-        target_object: len(get_object_confidences(predictions, target_object))
-        for target_object in objects
-    }
+    return {target_object: len(get_object_confidences(predictions, target_object)) for target_object in objects}
 
 
-def post_image(
-    url: str, image_bytes: bytes, api_key: str, timeout: int, data: dict = {}
-):
+def post_image(url: str, image_bytes: bytes, api_key: str, timeout: int, data: dict = {}):
     """Post an image to Deepstack."""
     try:
         data["api_key"] = api_key
-        response = requests.post(
-            url, files={"image": image_bytes}, data=data, timeout=timeout
-        )
+        response = requests.post(url, files={"image": image_bytes}, data=data, timeout=timeout)
         return response
     except requests.exceptions.Timeout:
-        raise DeepstackException(
-            f"Timeout connecting to Deepstack, current timeout is {timeout} seconds"
-        )
+        raise DeepstackException(f"Timeout connecting to Deepstack, current timeout is {timeout} seconds")
     except requests.exceptions.ConnectionError as exc:
         raise DeepstackException(f"Connection error: {exc}")
 
@@ -101,17 +89,12 @@ class Deepstack(object):
     """Base class for deepstack."""
 
     def __init__(
-        self,
-        ip_address: str,
-        port: str,
-        api_key: str = "",
-        timeout: int = DEFAULT_TIMEOUT,
-        url_detection: str = "",
+        self, ip: str, port: str, api_key: str = "", timeout: int = DEFAULT_TIMEOUT, url: str = "",
     ):
 
-        self._ip_address = ip_address
+        self._ip = ip
         self._port = port
-        self._url_detection = url_detection
+        self._url = url
         self._api_key = api_key
         self._timeout = timeout
         self._response = None
@@ -119,14 +102,12 @@ class Deepstack(object):
     def detect(self, image_bytes: bytes):
         """Process image_bytes, performing detection."""
         self._response = None
-        url = self._url_detection.format(self._ip_address, self._port)
+        url = self._url.format(ip=self._ip, port=self._port)
 
         response = post_image(url, image_bytes, self._api_key, self._timeout)
 
         if not response.status_code == HTTP_OK:
-            raise DeepstackException(
-                f"Error from request, status code: {response.status_code}"
-            )
+            raise DeepstackException(f"Error from request, status code: {response.status_code}")
             return
 
         self._response = response.json()
@@ -144,15 +125,12 @@ class DeepstackObject(Deepstack):
     """Work with objects"""
 
     def __init__(
-        self,
-        ip_address: str,
-        port: str,
-        api_key: str = "",
-        timeout: int = DEFAULT_TIMEOUT,
+        self, ip: str, port: str, api_key: str = "", timeout: int = DEFAULT_TIMEOUT, custom_model: str = None,
     ):
-        super().__init__(
-            ip_address, port, api_key, timeout, url_detection=URL_OBJECT_DETECTION
-        )
+        if not custom_model:
+            super().__init__(ip, port, api_key, timeout, url=URL_OBJECT_DETECTION)
+        else:
+            super().__init__(ip, port, api_key, timeout, url=URL_CUSTOM.format(custom_model=custom_model))
 
     @property
     def predictions(self):
@@ -164,15 +142,9 @@ class DeepstackScene(Deepstack):
     """Work with scenes"""
 
     def __init__(
-        self,
-        ip_address: str,
-        port: str,
-        api_key: str = "",
-        timeout: int = DEFAULT_TIMEOUT,
+        self, ip: str, port: str, api_key: str = "", timeout: int = DEFAULT_TIMEOUT,
     ):
-        super().__init__(
-            ip_address, port, api_key, timeout, url_detection=URL_SCENE_DETECTION
-        )
+        super().__init__(ip, port, api_key, timeout, url=URL_SCENE_DETECTION)
 
     @property
     def predictions(self):
@@ -184,15 +156,9 @@ class DeepstackFace(Deepstack):
     """Work with objects"""
 
     def __init__(
-        self,
-        ip_address: str,
-        port: str,
-        api_key: str = "",
-        timeout: int = DEFAULT_TIMEOUT,
+        self, ip: str, port: str, api_key: str = "", timeout: int = DEFAULT_TIMEOUT,
     ):
-        super().__init__(
-            ip_address, port, api_key, timeout, url_detection=URL_FACE_DETECTION
-        )
+        super().__init__(ip, port, api_key, timeout, url=URL_FACE_DETECTION)
 
     @property
     def predictions(self):
@@ -205,7 +171,7 @@ class DeepstackFace(Deepstack):
         """
 
         response = post_image(
-            url=URL_FACE_REGISTRATION.format(self._ip_address, self._port),
+            url=URL_FACE_REGISTRATION.format(ip=self._ip, port=self._port),
             image_bytes=image_bytes,
             api_key=self._api_key,
             timeout=self._timeout,
@@ -220,14 +186,12 @@ class DeepstackFace(Deepstack):
 
     def recognise(self, image_bytes: bytes):
         """Process image_bytes, performing recognition."""
-        url = URL_FACE_RECOGNITION.format(self._ip_address, self._port)
+        url = URL_FACE_RECOGNITION.format(ip=self._ip, port=self._port)
 
         response = post_image(url, image_bytes, self._api_key, self._timeout)
 
         if not response.status_code == HTTP_OK:
-            raise DeepstackException(
-                f"Error from request, status code: {response.status_code}"
-            )
+            raise DeepstackException(f"Error from request, status code: {response.status_code}")
             return
 
         self._response = response.json()
