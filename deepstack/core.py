@@ -6,8 +6,12 @@ from PIL import Image
 from typing import Union, List, Set, Dict
 
 ## Const
-HTTP_OK = 200
+DEFAULT_API_KEY = ""
 DEFAULT_TIMEOUT = 10  # seconds
+
+## HTTP codes
+HTTP_OK = 200
+BAD_URL = 404
 
 ## API urls
 URL_CUSTOM = "http://{ip}:{port}/v1/vision/custom/{custom_model}"
@@ -22,7 +26,8 @@ def format_confidence(confidence: Union[str, float]) -> float:
     """Takes a confidence from the API like
     0.55623 and returns 55.6 (%).
     """
-    return round(float(confidence) * 100, 1)
+    DECIMALS = 1
+    return round(float(confidence) * 100, DECIMALS)
 
 
 def get_confidences_above_threshold(confidences: List[float], confidence_threshold: float) -> List[float]:
@@ -50,7 +55,7 @@ def get_objects(predictions: List[Dict]) -> List[str]:
     Get a list of the unique objects predicted.
     """
     labels = [pred["label"] for pred in predictions]
-    return list(set(labels))
+    return sorted(list(set(labels)))
 
 
 def get_object_confidences(predictions: List[Dict], target_object: str):
@@ -74,7 +79,12 @@ def post_image(url: str, image_bytes: bytes, api_key: str, timeout: int, data: d
     try:
         data["api_key"] = api_key  # Insert the api_key
         response = requests.post(url, files={"image": image_bytes}, data=data, timeout=timeout)
-        return response
+        if response.status_code == HTTP_OK:
+            return response
+        elif response.status_code == BAD_URL:
+            raise DeepstackException(f"Bad url supplied, url {url} raised error {BAD_URL}")
+        else:
+            raise DeepstackException(f"Error from Deepstack request, status code: {response.status_code}")
     except requests.exceptions.Timeout:
         raise DeepstackException(f"Timeout connecting to Deepstack, current timeout is {timeout} seconds")
     except requests.exceptions.ConnectionError as exc:
@@ -107,13 +117,7 @@ class Deepstack(object):
     def detect(self, image_bytes: bytes):
         """Process image_bytes and detect."""
         self._response = None
-        response = post_image(self._url_detect, image_bytes, self._api_key, self._timeout)
-
-        if not response.status_code == HTTP_OK:
-            raise DeepstackException(f"Error from request, status code: {response.status_code}")
-            return
-
-        self._response = response.json()
+        self._response = post_image(self._url_detect, image_bytes, self._api_key, self._timeout).json()
         if not self._response["success"]:
             error = self._response["error"]
             raise DeepstackException(f"Error from Deepstack: {error}")
@@ -136,7 +140,12 @@ class DeepstackObject(Deepstack):
     """Work with objects"""
 
     def __init__(
-        self, ip: str, port: str, api_key: str = "", timeout: int = DEFAULT_TIMEOUT, custom_model: str = None,
+        self,
+        ip: str,
+        port: str,
+        api_key: str = DEFAULT_API_KEY,
+        timeout: int = DEFAULT_TIMEOUT,
+        custom_model: str = None,
     ):
         if not custom_model:
             super().__init__(
@@ -157,7 +166,7 @@ class DeepstackScene(Deepstack):
     """Work with scenes"""
 
     def __init__(
-        self, ip: str, port: str, api_key: str = "", timeout: int = DEFAULT_TIMEOUT,
+        self, ip: str, port: str, api_key: str = DEFAULT_API_KEY, timeout: int = DEFAULT_TIMEOUT,
     ):
         super().__init__(
             api_key, timeout, url_detect=URL_SCENE_DETECTION.format(ip=self._ip, port=self._port),
@@ -173,7 +182,7 @@ class DeepstackFace(Deepstack):
     """Work with objects"""
 
     def __init__(
-        self, ip: str, port: str, api_key: str = "", timeout: int = DEFAULT_TIMEOUT,
+        self, ip: str, port: str, api_key: str = DEFAULT_API_KEY, timeout: int = DEFAULT_TIMEOUT,
     ):
         super().__init__(
             api_key,
@@ -212,10 +221,6 @@ class DeepstackFace(Deepstack):
         """Process image_bytes, performing recognition."""
 
         response = post_image(self._url_recognize, image_bytes, self._api_key, self._timeout)
-
-        if not response.status_code == HTTP_OK:
-            raise DeepstackException(f"Error from request, status code: {response.status_code}")
-            return
 
         self._response = response.json()
         if not self._response["success"]:
