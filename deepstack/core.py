@@ -93,8 +93,8 @@ def get_objects_summary(predictions: List[Dict]):
 
 def post_image(
     url: str, image_bytes: bytes, api_key: str, timeout: int, data: dict = {}
-):
-    """Post an image to Deepstack. Only handles excpetions."""
+) -> requests.models.Response:
+    """Post an image to Deepstack. Only handles exceptions."""
     try:
         data["api_key"] = api_key  # Insert the api_key
         return requests.post(
@@ -102,15 +102,21 @@ def post_image(
         )
     except requests.exceptions.Timeout:
         raise DeepstackException(
-            f"Timeout connecting to Deepstack, current timeout is {timeout} seconds"
+            f"Timeout connecting to Deepstack, the current timeout is {timeout} seconds, try increasing this value"
         )
-    except requests.exceptions.ConnectionError as exc:
-        raise DeepstackException(f"Connection error: {exc}")
+    except requests.exceptions.ConnectionError or requests.exceptions.MissingSchema as exc:
+        raise DeepstackException(
+            f"Deepstack connection error, check your IP and port: {exc}"
+        )
 
 
-def process_image(url: str, image_bytes: bytes, api_key: str, timeout: int):
+def process_image(
+    url: str, image_bytes: bytes, api_key: str, timeout: int, data: dict = {}
+) -> Dict:
     """Process image_bytes and detect. Handles common status codes"""
-    response = post_image(url, image_bytes, api_key, timeout)
+    response = post_image(
+        url=url, image_bytes=image_bytes, api_key=api_key, timeout=timeout, data=data
+    )
     if response.status_code == HTTP_OK:
         return response.json()
     elif response.status_code == BAD_URL:
@@ -168,23 +174,30 @@ class DeepstackObject(DeepstackVision):
     ):
         if not custom_model:
             super().__init__(
-                ip, port, api_key, timeout, url_detect=URL_OBJECT_DETECTION,
+                ip=ip,
+                port=port,
+                api_key=api_key,
+                timeout=timeout,
+                url_detect=URL_OBJECT_DETECTION,
             )
         else:
             super().__init__(
-                ip,
-                port,
-                api_key,
-                timeout,
+                ip=ip,
+                port=port,
+                api_key=api_key,
+                timeout=timeout,
                 url_detect=URL_CUSTOM.format(custom_model=custom_model),
             )
 
     def detect(self, image_bytes: bytes):
         """Process image_bytes and detect."""
-        response_json = process_image(
-            self._url_detect, image_bytes, self._api_key, self._timeout
+        response = process_image(
+            url=self._url_detect,
+            image_bytes=image_bytes,
+            api_key=self._api_key,
+            timeout=self._timeout,
         )
-        return response_json["predictions"]
+        return response["predictions"]
 
 
 class DeepstackScene(DeepstackVision):
@@ -192,19 +205,28 @@ class DeepstackScene(DeepstackVision):
 
     def __init__(
         self,
-        ip: str,
-        port: str,
+        ip: str = DEFAULT_IP,
+        port: int = DEFAULT_PORT,
         api_key: str = DEFAULT_API_KEY,
         timeout: int = DEFAULT_TIMEOUT,
     ):
         super().__init__(
-            api_key, timeout, url_detect=URL_SCENE_DETECTION,
+            ip=ip,
+            port=port,
+            api_key=api_key,
+            timeout=timeout,
+            url_detect=URL_SCENE_DETECTION,
         )
 
     def detect(self, image_bytes: bytes):
         """Process image_bytes and detect."""
-        response_json = process_image(self, image_bytes, self._api_key, self._timeout)
-        return response_json
+        response = process_image(
+            url=self._url_detect,
+            image_bytes=image_bytes,
+            api_key=self._api_key,
+            timeout=self._timeout,
+        )
+        return response
 
 
 class DeepstackFace(DeepstackVision):
@@ -212,30 +234,36 @@ class DeepstackFace(DeepstackVision):
 
     def __init__(
         self,
-        ip: str,
-        port: str,
+        ip: str = DEFAULT_IP,
+        port: int = DEFAULT_PORT,
         api_key: str = DEFAULT_API_KEY,
         timeout: int = DEFAULT_TIMEOUT,
     ):
         super().__init__(
-            api_key,
-            timeout,
-            url_detect=URL_FACE_DETECTION.format(ip=self._ip, port=self._port),
-            url_register=URL_FACE_REGISTER.format(ip=self._ip, port=self._port),
-            url_recognize=URL_FACE_RECOGNIZE.format(ip=self._ip, port=self._port),
+            ip=ip,
+            port=port,
+            api_key=api_key,
+            timeout=timeout,
+            url_detect=URL_FACE_DETECTION,
+            url_register=URL_FACE_REGISTER,
+            url_recognize=URL_FACE_RECOGNIZE,
         )
 
     def detect(self, image_bytes: bytes):
         """Process image_bytes and detect."""
-        response_json = process_image(self, image_bytes, self._api_key, self._timeout)
-        return response_json
+        response = process_image(
+            url=self._url_detect,
+            image_bytes=image_bytes,
+            api_key=self._api_key,
+            timeout=self._timeout,
+        )
+        return response["predictions"]
 
     def register(self, name: str, image_bytes: bytes):
         """
         Register a face name to a file.
         """
-
-        response = post_image(
+        response = process_image(
             url=self._url_register,
             image_bytes=image_bytes,
             api_key=self._api_key,
@@ -243,21 +271,22 @@ class DeepstackFace(DeepstackVision):
             data={"userid": name},
         )
 
-        if response.status_code == HTTP_OK and response.json()["success"] == True:
-            return
+        if response["success"] == True:
+            return response["message"]
 
-        elif response.status_code == HTTP_OK and response.json()["success"] == False:
-            error = response.json()["error"]
-            raise DeepstackException(f"Error from Deepstack: {error}")
+        elif response["success"] == False:
+            error = response["error"]
+            raise DeepstackException(
+                f"Deepstack raised an error registering a face: {error}"
+            )
 
     def recognize(self, image_bytes: bytes):
         """Process image_bytes, performing recognition."""
-
-        response = post_image(
-            self._url_recognize, image_bytes, self._api_key, self._timeout
+        response = process_image(
+            url=self._url_recognize,
+            image_bytes=image_bytes,
+            api_key=self._api_key,
+            timeout=self._timeout,
         )
 
-        self._response = response.json()
-        if not self._response["success"]:
-            error = self._response["error"]
-            raise DeepstackException(f"Error from Deepstack: {error}")
+        return response["predictions"]
