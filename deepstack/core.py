@@ -22,7 +22,7 @@ URL_OBJECT_DETECTION = "/detection"
 URL_FACE_DETECTION = "/face"
 URL_FACE_REGISTER = "/face/register"
 URL_FACE_RECOGNIZE = "/face/recognize"
-URL_SCENE_DETECTION = "/scene"
+URL_SCENE_RECOGNIZE = "/scene"
 
 
 class DeepstackException(Exception):
@@ -215,17 +215,18 @@ class DeepstackScene(DeepstackVision):
             port=port,
             api_key=api_key,
             timeout=timeout,
-            url_detect=URL_SCENE_DETECTION,
+            url_recognize=URL_SCENE_RECOGNIZE,
         )
 
-    def detect(self, image_bytes: bytes):
+    def recognize(self, image_bytes: bytes):
         """Process image_bytes and detect."""
         response = process_image(
-            url=self._url_detect,
+            url=self._url_recognize,
             image_bytes=image_bytes,
             api_key=self._api_key,
             timeout=self._timeout,
         )
+        del response["success"]
         return response
 
 
