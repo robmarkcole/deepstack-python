@@ -29,7 +29,7 @@ If all goes well you should see the following returned:
 * Use venv -> `source venv/bin/activate`
 * `pip3 install -r requirements.txt` and `pip3 install -r requirements-dev.txt`
 * Run tests with `venv/bin/pytest tests/*`
-* Black format with `venv/bin/black deepstack/core.py` and `venv/bin/black tests/test_deepstack.py`
+* Black format with `venv/bin/black .`
 
 ## Jupyter
 * Docs are created using Jupyter notebooks
