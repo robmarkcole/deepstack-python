@@ -4,7 +4,7 @@ import requests_mock
 import pytest
 
 MOCK_IP_ADDRESS = "localhost"
-MOCK_PORT = 5000
+MOCK_PORT = 80
 OBJ_URL = "http://{}:{}/v1/vision/detection".format(MOCK_IP_ADDRESS, MOCK_PORT)
 SCENE_URL = "http://{}:{}/v1/vision/scene".format(MOCK_IP_ADDRESS, MOCK_PORT)
 FACE_DETECTION_URL = "http://{}:{}/v1/vision/face".format(MOCK_IP_ADDRESS, MOCK_PORT)
@@ -16,6 +16,7 @@ MOCK_API_KEY = "mock_api_key"
 MOCK_TIMEOUT = 8
 
 MOCK_SCENE_RESPONSE = {"success": True, "label": "street", "confidence": 0.86745402}
+MOCK_SCENE_PREDICTION = {"label": "street", "confidence": 0.86745402}
 
 MOCK_OBJECT_DETECTION_RESPONSE = {
     "success": True,
@@ -87,7 +88,7 @@ MOCK_FACE_DETECTION_RESPONSE = {
 }
 
 
-MOCK_RECOGNISED_FACES = {"Idris Elba": 75.0}
+MOCK_RECOGNIZED_FACES = {"Idris Elba": 75.0}
 
 
 def test_DeepstackObject_detect():
@@ -98,12 +99,12 @@ def test_DeepstackObject_detect():
         )
 
         dsobject = ds.DeepstackObject(MOCK_IP_ADDRESS, MOCK_PORT)
-        dsobject.detect(MOCK_BYTES)
-        assert dsobject.predictions == MOCK_OBJECT_PREDICTIONS
+        predictions = dsobject.detect(MOCK_BYTES)
+        assert predictions == MOCK_OBJECT_PREDICTIONS
 
 
 def test_DeepstackObject_detect_timeout():
-    """Test a timeout. THIS SHOULD FAIL"""
+    """Test a timeout. THIS SHOULD FAIL, CURRENTLY BROKEN TEST"""
     with pytest.raises(ds.DeepstackException) as excinfo:
         with requests_mock.Mocker() as mock_req:
             mock_req.post(OBJ_URL, exc=requests.exceptions.ConnectTimeout)
@@ -119,8 +120,8 @@ def test_DeepstackScene():
         mock_req.post(SCENE_URL, status_code=ds.HTTP_OK, json=MOCK_SCENE_RESPONSE)
 
         dsscene = ds.DeepstackScene(MOCK_IP_ADDRESS, MOCK_PORT)
-        dsscene.detect(MOCK_BYTES)
-        assert dsscene.predictions == MOCK_SCENE_RESPONSE
+        predictions = dsscene.recognize(MOCK_BYTES)
+        assert predictions == MOCK_SCENE_PREDICTION
 
 
 def test_DeepstackFace():
@@ -133,8 +134,8 @@ def test_DeepstackFace():
         )
 
         dsface = ds.DeepstackFace(MOCK_IP_ADDRESS, MOCK_PORT)
-        dsface.detect(MOCK_BYTES)
-        assert dsface.predictions == MOCK_FACE_DETECTION_RESPONSE["predictions"]
+        predictions = dsface.detect(MOCK_BYTES)
+        assert predictions == MOCK_FACE_DETECTION_RESPONSE["predictions"]
 
 
 def test_get_objects():
@@ -167,6 +168,6 @@ def test_get_confidences_above_threshold():
     )
 
 
-def test_get_recognised_faces():
+def test_get_recognized_faces():
     predictions = MOCK_FACE_RECOGNITION_RESPONSE["predictions"]
-    assert ds.get_recognised_faces(predictions) == MOCK_RECOGNISED_FACES
+    assert ds.get_recognized_faces(predictions) == MOCK_RECOGNIZED_FACES
