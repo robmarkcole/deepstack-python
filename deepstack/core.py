@@ -170,24 +170,15 @@ class DeepstackObject(DeepstackVision):
         port: int = DEFAULT_PORT,
         api_key: str = DEFAULT_API_KEY,
         timeout: int = DEFAULT_TIMEOUT,
-        custom_model: str = None,
+        custom_model: str = "",
     ):
-        if not custom_model:
-            super().__init__(
-                ip=ip,
-                port=port,
-                api_key=api_key,
-                timeout=timeout,
-                url_detect=URL_OBJECT_DETECTION,
-            )
+        if custom_model:
+            url_detect = URL_CUSTOM.format(custom_model=custom_model)
         else:
-            super().__init__(
-                ip=ip,
-                port=port,
-                api_key=api_key,
-                timeout=timeout,
-                url_detect=URL_CUSTOM.format(custom_model=custom_model),
-            )
+            url_detect = URL_OBJECT_DETECTION
+        super().__init__(
+            ip=ip, port=port, api_key=api_key, timeout=timeout, url_detect=url_detect,
+        )
 
     def detect(self, image_bytes: bytes):
         """Process image_bytes and detect."""
