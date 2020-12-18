@@ -2,18 +2,18 @@
 [![PyPI Version](https://img.shields.io/pypi/v/deepstack-python.svg)](https://pypi.org/project/deepstack-python/)
 
 # deepstack-python
-Unofficial python API for [DeepStack](https://python.deepstack.cc/). Provides classes for making requests to the object detection & face detection/recognition endpoints. Also includes some helper functions for processing the results. See the Jupyter notebooks for usage.
+Unofficial python API for [DeepStack](https://docs.deepstack.cc). Provides classes for making requests to the object detection & face detection/recognition endpoints. Also includes some helper functions for processing the results. See the Jupyter notebooks for usage.
 
-Run deepstack with all three endpoints active (CPU, noAVX mode):
+Run Deepstack with all three endpoints active (CPU mode):
 ```
 docker run \
       -e VISION-SCENE=True \
       -e VISION-DETECTION=True \
       -e VISION-FACE=True \
       -v localstorage:/datastore \
-      -p 5000:5000 \
+      -p 80:5000 \
       -e API-KEY="" \
-      --name deepstack deepquestai/deepstack:noavx
+      --name deepstack deepquestai/deepstack
 ```
 Check deepstack is running using curl (from root of this repo):
 ```
