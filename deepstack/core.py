@@ -10,6 +10,7 @@ DEFAULT_API_KEY = ""
 DEFAULT_TIMEOUT = 10  # seconds
 DEFAULT_IP = "localhost"
 DEFAULT_PORT = 80
+DEFAULT_MIN_CONFIDENCE = 0.45
 
 ## HTTP codes
 HTTP_OK = 200
@@ -92,11 +93,10 @@ def get_objects_summary(predictions: List[Dict]):
 
 
 def post_image(
-    url: str, image_bytes: bytes, api_key: str, timeout: int, data: dict = {}
+    url: str, image_bytes: bytes, timeout: int, data: dict
 ) -> requests.models.Response:
     """Post an image to Deepstack. Only handles exceptions."""
     try:
-        data["api_key"] = api_key  # Insert the api_key
         return requests.post(
             url, files={"image": image_bytes}, data=data, timeout=timeout
         )
@@ -111,12 +111,17 @@ def post_image(
 
 
 def process_image(
-    url: str, image_bytes: bytes, api_key: str, timeout: int, data: dict = {}
+    url: str,
+    image_bytes: bytes,
+    api_key: str,
+    min_confidence: float,
+    timeout: int,
+    data: dict = {},
 ) -> Dict:
     """Process image_bytes and detect. Handles common status codes"""
-    response = post_image(
-        url=url, image_bytes=image_bytes, api_key=api_key, timeout=timeout, data=data
-    )
+    data["api_key"] = api_key
+    data["min_confidence"] = min_confidence
+    response = post_image(url=url, image_bytes=image_bytes, timeout=timeout, data=data)
     if response.status_code == HTTP_OK:
         return response.json()
     elif response.status_code == BAD_URL:
@@ -136,17 +141,18 @@ class DeepstackVision:
         port: int = DEFAULT_PORT,
         api_key: str = DEFAULT_API_KEY,
         timeout: int = DEFAULT_TIMEOUT,
+        min_confidence: float = DEFAULT_MIN_CONFIDENCE,
         url_detect: str = "",
         url_recognize: str = "",
         url_register: str = "",
     ):
-
+        self._api_key = api_key
+        self._timeout = timeout
+        self._min_confidence = min_confidence
         self._url_base = URL_BASE_VISION.format(ip=ip, port=port)
         self._url_detect = self._url_base + url_detect
         self._url_recognize = self._url_base + url_recognize
         self._url_register = self._url_base + url_register
-        self._api_key = api_key
-        self._timeout = timeout
 
     def detect(self):
         """Process image_bytes and detect."""
@@ -170,6 +176,7 @@ class DeepstackObject(DeepstackVision):
         port: int = DEFAULT_PORT,
         api_key: str = DEFAULT_API_KEY,
         timeout: int = DEFAULT_TIMEOUT,
+        min_confidence: float = DEFAULT_MIN_CONFIDENCE,
         custom_model: str = "",
     ):
         if custom_model:
@@ -177,7 +184,12 @@ class DeepstackObject(DeepstackVision):
         else:
             url_detect = URL_OBJECT_DETECTION
         super().__init__(
-            ip=ip, port=port, api_key=api_key, timeout=timeout, url_detect=url_detect,
+            ip=ip,
+            port=port,
+            api_key=api_key,
+            timeout=timeout,
+            min_confidence=min_confidence,
+            url_detect=url_detect,
         )
 
     def detect(self, image_bytes: bytes):
@@ -186,6 +198,7 @@ class DeepstackObject(DeepstackVision):
             url=self._url_detect,
             image_bytes=image_bytes,
             api_key=self._api_key,
+            min_confidence=self._min_confidence,
             timeout=self._timeout,
         )
         return response["predictions"]
@@ -200,12 +213,14 @@ class DeepstackScene(DeepstackVision):
         port: int = DEFAULT_PORT,
         api_key: str = DEFAULT_API_KEY,
         timeout: int = DEFAULT_TIMEOUT,
+        min_confidence: float = DEFAULT_MIN_CONFIDENCE,
     ):
         super().__init__(
             ip=ip,
             port=port,
             api_key=api_key,
             timeout=timeout,
+            min_confidence=min_confidence,
             url_recognize=URL_SCENE_RECOGNIZE,
         )
 
@@ -215,6 +230,7 @@ class DeepstackScene(DeepstackVision):
             url=self._url_recognize,
             image_bytes=image_bytes,
             api_key=self._api_key,
+            min_confidence=self._min_confidence,
             timeout=self._timeout,
         )
         del response["success"]
@@ -230,12 +246,14 @@ class DeepstackFace(DeepstackVision):
         port: int = DEFAULT_PORT,
         api_key: str = DEFAULT_API_KEY,
         timeout: int = DEFAULT_TIMEOUT,
+        min_confidence: float = DEFAULT_MIN_CONFIDENCE,
     ):
         super().__init__(
             ip=ip,
             port=port,
             api_key=api_key,
             timeout=timeout,
+            min_confidence=min_confidence,
             url_detect=URL_FACE_DETECTION,
             url_register=URL_FACE_REGISTER,
             url_recognize=URL_FACE_RECOGNIZE,
@@ -247,6 +265,7 @@ class DeepstackFace(DeepstackVision):
             url=self._url_detect,
             image_bytes=image_bytes,
             api_key=self._api_key,
+            min_confidence=self._min_confidence,
             timeout=self._timeout,
         )
         return response["predictions"]
@@ -259,6 +278,7 @@ class DeepstackFace(DeepstackVision):
             url=self._url_register,
             image_bytes=image_bytes,
             api_key=self._api_key,
+            min_confidence=self._min_confidence,
             timeout=self._timeout,
             data={"userid": name},
         )
@@ -278,6 +298,7 @@ class DeepstackFace(DeepstackVision):
             url=self._url_recognize,
             image_bytes=image_bytes,
             api_key=self._api_key,
+            min_confidence=self._min_confidence,
             timeout=self._timeout,
         )
 
