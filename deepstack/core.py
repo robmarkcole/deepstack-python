@@ -5,8 +5,6 @@ import requests
 from PIL import Image
 from typing import Union, List, Set, Dict
 
-from requests.models import Response
-
 ## Const
 DEFAULT_API_KEY = ""
 DEFAULT_TIMEOUT = 10  # seconds
