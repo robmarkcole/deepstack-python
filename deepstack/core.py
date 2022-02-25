@@ -5,6 +5,8 @@ import requests
 from PIL import Image
 from typing import Union, List, Set, Dict
 
+from requests.models import Response
+
 ## Const
 DEFAULT_API_KEY = ""
 DEFAULT_TIMEOUT = 10  # seconds
@@ -23,6 +25,7 @@ URL_OBJECT_DETECTION = "/detection"
 URL_FACE_DETECTION = "/face"
 URL_FACE_REGISTER = "/face/register"
 URL_FACE_RECOGNIZE = "/face/recognize"
+URL_FACE_LIST = "/face/list"
 URL_SCENE_RECOGNIZE = "/scene"
 
 
@@ -132,6 +135,21 @@ def process_image(
         )
 
 
+def get_stored_faces(url, api_key, timeout) -> List:
+    """Posts a request and get the stored faces as a list"""
+    try:
+        data = requests.post(url, timeout=timeout, data={"api_key": api_key})
+    except requests.exceptions.Timeout:
+        raise DeepstackException(
+            f"Timeout connecting to Deepstack, the current timeout is {timeout} seconds, try increasing this value"
+        )
+    except requests.exceptions.ConnectionError or requests.exceptions.MissingSchema as exc:
+        raise DeepstackException(
+            f"Deepstack connection error, check your IP and port: {exc}"
+        )
+    return data.json()
+
+
 class DeepstackVision:
     """Base class for Deepstack vision."""
 
@@ -145,6 +163,7 @@ class DeepstackVision:
         url_detect: str = "",
         url_recognize: str = "",
         url_register: str = "",
+        url_face_list: str = "",
     ):
         self._api_key = api_key
         self._timeout = timeout
@@ -153,6 +172,7 @@ class DeepstackVision:
         self._url_detect = self._url_base + url_detect
         self._url_recognize = self._url_base + url_recognize
         self._url_register = self._url_base + url_register
+        self._url_face_list = self._url_base + url_face_list
 
     def detect(self):
         """Process image_bytes and detect."""
@@ -257,6 +277,7 @@ class DeepstackFace(DeepstackVision):
             url_detect=URL_FACE_DETECTION,
             url_register=URL_FACE_REGISTER,
             url_recognize=URL_FACE_RECOGNIZE,
+            url_face_list=URL_FACE_LIST,
         )
 
     def detect(self, image_bytes: bytes):
@@ -303,3 +324,10 @@ class DeepstackFace(DeepstackVision):
         )
 
         return response["predictions"]
+
+    def get_registered_faces(self):
+        """Get the name of the registered faces"""
+        response = get_stored_faces(
+            url=self._url_face_list, api_key=self._api_key, timeout=self._timeout
+        )
+        return response["faces"]
